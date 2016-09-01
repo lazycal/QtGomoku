@@ -1,6 +1,7 @@
 #include "dialog.h"
 #include <QApplication>
 #include"chess.h"
+#include<ctime>
 Chess cs;
 int main(int argc, char *argv[])
 {

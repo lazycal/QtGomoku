@@ -4,7 +4,7 @@
 #include<QDebug>
 #include<QMessageBox>
 #include<ctime>
-const int extent = 50, pointsz = 4, countDown = 12000;
+const int extent = 50, pointsz = 4, countDown = 10;
 
 QPoint chBoard::getNrstCor(QPoint p)
 {
