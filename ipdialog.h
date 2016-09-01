@@ -3,6 +3,7 @@
 
 #include<QDialog>
 #include<QLineEdit>
+#include<QComboBox>
 
 class IpDialog : public QDialog
 {
@@ -11,7 +12,7 @@ class IpDialog : public QDialog
 public:
     explicit IpDialog(QWidget *parent = 0);
     int exec(QString &ip, QString &port);
-    QLineEdit *lineEdit;
+    QComboBox *hostCombo;
     QLineEdit *portLineEdit;
 };
 
