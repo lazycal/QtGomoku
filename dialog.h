@@ -14,10 +14,9 @@ class Dialog : public QDialog
 public:
     explicit Dialog(QWidget *parent = 0);
     ~Dialog();
+protected slots:
+    void setButtonConnect(bool connected);
     void updateUI();
-
-
-private slots:
     void on_pushButton_clicked();
 
     void on_pushButton_2_clicked();

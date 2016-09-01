@@ -11,14 +11,30 @@ Dialog::Dialog(QWidget *parent) :
     ui->setupUi(this);
     setStyleSheet("QLabel{font-size: 15px;}");
 //    ui->label_2->setStyleSheet("font-size: 15px;");
-    connect(ui->widget, &chBoard::isEnd, [=](){
+    connect(ui->widget, &chBoard::ReadyEnabled, [=](){
+        qDebug() << "ReadyEnabled";
         ui->pushButton_3->setEnabled(true);
     });
+    connect(ui->widget, &chBoard::setButtonConnect, this, &Dialog::setButtonConnect);
+    connect(ui->widget, &chBoard::updateUI, this, &Dialog::updateUI);
 }
 
 Dialog::~Dialog()
 {
     delete ui;
+}
+
+void Dialog::setButtonConnect(bool connected)
+{
+    if (connected) {
+        ui->pushButton->setText("Disconnect");
+        ui->pushButton_2->setEnabled(false);
+        ui->pushButton_3->setEnabled(true);
+    }else {
+        ui->pushButton->setText("Create");
+        ui->pushButton_2->setEnabled(true);
+        ui->pushButton_3->setEnabled(false);
+    }
 }
 
 void Dialog::updateUI()
@@ -38,17 +54,22 @@ void Dialog::updateUI()
         ui->lcdTotal_2->display(cs.timeUsage[cs.curSide].toString("mm:ss"));
         ui->lcdTotal->display(cs.timeUsage[cs.curSide^1].toString("mm:ss"));
     }
-    ui->pushButton_3->setEnabled(!ui->widget->ready[ui->widget->isHost]);
+//    ui->pushButton_3->setEnabled(!ui->widget->ready[ui->widget->isHost]);
 }
 
 void Dialog::on_pushButton_clicked()
 {
-    IpDialog *dialog = new IpDialog(this);
-    QString ip, port;
-    if (dialog->exec(ip, port) == QDialog::Accepted) {
-        ui->widget->init(true, this);
-        ui->widget->setServer(ip, port);
-        setWindowTitle("Host");
+    if (ui->pushButton->text() == "Create") {
+        IpDialog *dialog = new IpDialog(this);
+        QString ip, port;
+        if (dialog->exec(ip, port) == QDialog::Accepted) {
+            ui->widget->init(true, this);
+            ui->widget->setServer(ip, port);
+            setWindowTitle("Host");
+        }
+    }else {
+        ui->widget->disconnectServer();
+        setButtonConnect(false);
     }
 }
 

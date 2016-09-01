@@ -33,9 +33,8 @@ public:
     void setServer(const QString&ip, const QString&port);
     void setSocket(const QString&ip, const QString&port);
 protected:
-    QMutex mutex;
     Dialog *dialog;
-    QTimer *timer;
+    QTimer *timer, *wait_timer;
     bool isHost, cs_lock, ready[2];
     QTcpSocket *tcpSocket;
     QTcpServer *tcpServer;
@@ -49,8 +48,11 @@ protected:
     void step(const QPoint&p);
     void initSocket();
     void result();
+    void disconnectServer();
 signals:
-    void isEnd();
+    void setButtonConnect(bool);
+    void updateUI();
+    void ReadyEnabled();
 protected slots:
     void readData();
     void timeout1();
