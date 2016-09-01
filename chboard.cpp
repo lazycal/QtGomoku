@@ -98,11 +98,9 @@ void chBoard::initSocket()
     });
     connect(tcpSocket, &QTcpSocket::readyRead, this, &chBoard::readData);
     connect(tcpSocket, &QTcpSocket::connected, [=](){
-        QMessageBox::information(this, "Success", "Connect successfully");
         emit setButtonConnect(true);
     });
     connect(tcpSocket, &QTcpSocket::disconnected, [=](){
-        QMessageBox::information(this, "Disconnected", "Disconnect successfully");
         emit setButtonConnect(false);
         if (!isHost) {
             timer->stop();
