@@ -40,7 +40,7 @@ IpDialog::IpDialog(QWidget *parent) : QDialog(parent), hostCombo(new QComboBox)
         if (ipAddressesList.at(i).isLoopback())
             hostCombo->addItem(ipAddressesList.at(i).toString());
     }
-    QPushButton *buttons[11];
+    QPushButton *buttons[12];
     QGridLayout *numBox = new QGridLayout;
     for (qint8 i = 0; i < 11; ++i) {
         buttons[i] = new QPushButton(QString::number(i), this);
@@ -55,9 +55,19 @@ IpDialog::IpDialog(QWidget *parent) : QDialog(parent), hostCombo(new QComboBox)
             QApplication::sendEvent(w, &keyRelease);
         });
     }
+    buttons[11] = new QPushButton(this);
+    buttons[11]->setFocusPolicy(Qt::NoFocus);
+    connect(buttons[11], &QPushButton::clicked, [=](){
+        QPointer<QWidget> w = focusWidget();
+        if (!w) return;
+        QKeyEvent keyPress(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);
+        QApplication::sendEvent(w, &keyPress);
+    });
     buttons[10]->setText(".");
-    numBox->addWidget(buttons[0], 3, 0, 1, 2);
-    numBox->addWidget(buttons[10], 3, 2);
+    buttons[11]->setText("Del");
+    numBox->addWidget(buttons[0], 3, 0);
+    numBox->addWidget(buttons[10], 3, 1);
+    numBox->addWidget(buttons[11], 3, 2);
     for (int i = 1; i <= 9; ++i)
         numBox->addWidget(buttons[i], 2 - (i - 1) / 3, (i - 1) % 3);
     la->addWidget(buttonBox, 4, 1);
