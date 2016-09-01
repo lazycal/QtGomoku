@@ -15,7 +15,7 @@ void Chess::init(bool _cur_side)
     state = -2;
     curSide = _cur_side;
     curRound = 0;
-    countDown = 0;
+    countDown = -1;
     timeUsage[0].setHMS(0, 0, 0);
     timeUsage[1].setHMS(0, 0, 0);
 }
@@ -70,12 +70,12 @@ QPoint Chess::defaultMove()
 
 QDataStream &operator<<(QDataStream &ds, const Chess &chess)
 {
-    ds << chess.chessBoard << chess.curRound << chess.curSide << chess.state << chess.timeUsage[0] << chess.timeUsage[1];
+    ds << chess.chessBoard << chess.curRound << chess.curSide << chess.state << chess.timeUsage[0] << chess.timeUsage[1] << chess.countDown;
     return ds;
 }
 
 QDataStream &operator>>(QDataStream &ds, Chess &chess)
 {
-    ds >> chess.chessBoard >> chess.curRound >> chess.curSide >> chess.state >> chess.timeUsage[0] >> chess.timeUsage[1];
+    ds >> chess.chessBoard >> chess.curRound >> chess.curSide >> chess.state >> chess.timeUsage[0] >> chess.timeUsage[1] >> chess.countDown;
     return ds;
 }

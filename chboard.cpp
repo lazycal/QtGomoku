@@ -25,7 +25,6 @@ void chBoard::drawPiece(QPainter *painter, const QPoint &p, bool col)
 
 void chBoard::paintEvent(QPaintEvent *event)
 {
-    qDebug() << "paintEvent";
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setPen(Qt::black);
@@ -211,6 +210,7 @@ void chBoard::readData()
 void chBoard::step(const QPoint&p)
 {
     if (cs.step(p)) {
+        cs.countDown = -1;
         update();
         emit updateUI();
         startCountDown();
@@ -282,7 +282,8 @@ void chBoard::sendMessage2(bool r[2])
 
 void chBoard::startCountDown()
 {
-    cs.countDown = countDown;
+    qDebug() << "startCountDown=" << cs.countDown;
+    if (cs.countDown < 0) cs.countDown = countDown;
     update();
     emit updateUI();
     timer->start();
