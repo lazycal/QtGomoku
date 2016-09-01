@@ -3,15 +3,26 @@
 
 #include<QPoint>
 #include<QVector>
-
+#include<QDataStream>
+#include<QTime>
 class Chess
 {
 public:
     Chess();
-    QVector<QVector<int> > chess;
-    int curSide, curRound;
+    QVector<QVector<short> > chessBoard;
+    int curSide, curRound, countDown;
+    QTime timeUsage[2];
     void init(bool _cur_side);
+    void start();
     bool step(const QPoint &p);
+    bool exist(int x, int y, int k, int num, int side);
+    int getState() const;
+    QPoint defaultMove();
+    friend QDataStream &operator<<(QDataStream& ds, const Chess &chess);
+    friend QDataStream &operator>>(QDataStream& ds, Chess &chess);
+
+private:
+    int state;
 };
 
 #endif // CHESS_H

@@ -151,7 +151,7 @@
      <item>
       <widget class="QPushButton" name="pushButton_3">
        <property name="text">
-        <string>Restart</string>
+        <string>Ready</string>
        </property>
       </widget>
      </item>

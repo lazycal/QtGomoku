@@ -2,17 +2,243 @@
 #include<QPainter>
 #include<QMouseEvent>
 #include<QDebug>
-const int extent = 50, pointsz = 4;
-chBoard::chBoard(QWidget *parent) : QWidget(parent), lock(false), isHost(false)
+#include<QMessageBox>
+const int extent = 50, pointsz = 4, countDown = 10;
+chBoard::chBoard(QWidget *parent) : QWidget(parent), timer(new QTimer(this)), tcpServer(new QTcpServer(this)), tcpSocket(new QTcpSocket(this)), cs_lock(false)
 {
     this->setFixedSize(540, 540);
     cellsz = (width() - extent) / 14.0;
+    timer->setInterval(1000);
+    connect(timer, &QTimer::timeout, this, &chBoard::timeout1);
 }
 
+void chBoard::setServer(const QString &ip, const QString &port)
+{
+    tcpSocket->abort();
+    tcpServer->close();
+    tcpServer = new QTcpServer(this);
+    connect(tcpServer, &QTcpServer::acceptError, [=](){
+        QMessageBox::critical(this, "Error", tcpServer->errorString());
+    });
+    QMessageBox *msgBox = new QMessageBox(this);
+    msgBox->setText("Waiting for connection...");
+    msgBox->setStandardButtons(QMessageBox::Cancel);
+    connect(tcpServer, &QTcpServer::newConnection, [=](){
+        qDebug() << "newConnection.";
+        tcpSocket = tcpServer->nextPendingConnection();
+        QMessageBox::information(this, "newConnection", QString("hostname=%3\nip=%1\nport=%2")
+                                 .arg(tcpSocket->peerAddress().toString(),QString(tcpSocket->peerPort()),tcpSocket->peerName()));
+        msgBox->accept();
+        initSocket();
+        if (cs.getState() != -2) sendMessage();
+    });
+    tcpServer->listen(QHostAddress(ip), port.toInt());
+    int ret = msgBox->exec();
+    if (ret == QMessageBox::Cancel)
+        tcpServer->close();
+}
 
+void chBoard::setSocket(const QString &ip, const QString &port)
+{
+    delete tcpSocket;
+    tcpSocket = new QTcpSocket(this);
+    QMessageBox *msgBox = new QMessageBox(this);
+    msgBox->setText("Connecting...");
+    msgBox->setStandardButtons(QMessageBox::Cancel);
+    connect(tcpSocket, &QTcpSocket::disconnected, [=](){
+        qDebug() << "disconnected";
+        QTimer::singleShot(100, msgBox, SLOT(accept()));
+    });
+    connect(tcpSocket, &QTcpSocket::connected, [=](){
+        qDebug() << "connected";
+        QTimer::singleShot(100, msgBox, SLOT(accept()));
+    });
+    tcpSocket->connectToHost(ip, port.toInt());
+    int ret = msgBox->exec();
+    if (ret == QMessageBox::Cancel) {
+        qDebug() << "QMessageBox::Cancel";
+        tcpSocket->abort();
+    }
+    else initSocket();
+}
+
+void chBoard::initSocket()
+{
+    connect(tcpSocket, static_cast<void (QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), [=](){
+        QMessageBox::critical(this, "tcpSocket->Error",tcpSocket->errorString());
+    });
+    connect(tcpSocket, &QTcpSocket::readyRead, this, &chBoard::readData);
+    connect(tcpSocket, &QTcpSocket::connected, [=](){
+        QMessageBox::information(this, "Success", "Connect successfully");
+    });
+    connect(tcpSocket, &QTcpSocket::disconnected, [=](){
+        QMessageBox::information(this, "Disconnected", "Disconnect successfully");
+    });
+}
+
+void chBoard::result()
+{
+    QString res = "You %1!";
+    res = res.arg(isHost == cs.getState() ? "win :-)" : "lose :-<");
+    end();
+    QMessageBox::information(this, "Result", res);
+    cs.init(qrand() % 2);
+}
+
+void chBoard::readData()
+{
+    qDebug() << "readyRead";
+    if (tcpSocket->bytesAvailable() <= 0) return;
+    QByteArray buffer = tcpSocket->readAll();
+    m_buffer.append(buffer);
+    QDataStream in(m_buffer);
+    while (m_buffer.size() >= sizeof(int)) {
+        int bsz, type_id;        Chess tmp;        bool side;
+        in >> bsz;
+        if (m_buffer.size() < bsz) break;
+        in >> type_id;
+        switch (type_id) {
+        case 0:
+            qDebug() << "0";
+            in >> side >> tmp;
+            mutex.lock();
+            if(tmp.curRound == cs. curRound + 1 || !isHost) {
+                received = true;
+                cs = tmp;
+                update();
+                dialog->updateUI();
+                startCountDown();
+                if (cs.getState() != -1 && cs.getState() != -2) result();
+            }
+            mutex.unlock();
+            break;
+        case 1:
+            qDebug() << "1";
+            in >> ready[0] >> ready[1];
+            if (ready[0] && ready[1] && isHost) {
+                start(true);
+                ready[0] = ready[1] = false;
+                sendMessage2(ready);
+                emit isEnd();
+            }else if (!ready[0] && !ready[1]) emit isEnd();
+            break;
+        }
+        m_buffer = m_buffer.right(m_buffer.size() - bsz);
+    }
+}
+
+void chBoard::step(const QPoint&p)
+{
+    timer->stop();
+    mutex.lock();
+    if (cs.step(p)) {
+        update();
+        dialog->updateUI();
+        startCountDown();
+        sendMessage();
+        if (cs.getState() != -1 && cs.getState() != -2) result();
+    }
+    mutex.unlock();
+}
+
+void chBoard::toggleReady(bool flg)
+{
+    ready[isHost] = true;
+    if (ready[0] && ready[1] && isHost) {
+        start(true);
+        ready[0] = ready[1] = false;
+        emit isEnd();
+    }
+    sendMessage2(ready);
+}
+
+void chBoard::mousePressEvent(QMouseEvent *event)
+{
+    if (isLocked()) return;
+    QPoint tmp = getNrstCor(event->pos());
+    if (tmp.x() != -1) step(tmp);
+}
+
+void chBoard::init(bool _isHost, Dialog *_dialog)
+{
+    isHost = _isHost;
+    dialog = _dialog;
+    ready[0] = ready[1] = false;
+}
+
+void chBoard::start(bool flg)
+{
+    timer->stop();
+    if (flg) cs.init(qrand() % 2);
+    cs.start();
+    startCountDown();
+    if (isHost) sendMessage();
+}
+
+bool chBoard::isLocked()
+{
+    return cs.getState() != -1 || cs.curSide != isHost;
+}
+
+void chBoard::sendMessage()
+{
+    QByteArray ba;
+    QDataStream ds(&ba, QIODevice::WriteOnly);
+    ds << int(0) << int(0);
+    ds << isHost << cs;
+    ds.device()->seek(0);
+    ds << (int)ba.size();
+    tcpSocket->write(ba);
+}
+
+void chBoard::sendMessage2(bool r[2])
+{
+    QByteArray ba;
+    QDataStream ds(&ba, QIODevice::WriteOnly);
+    ds << int(0) << int(1);
+    ds << r[0] << r[1];
+    ds.device()->seek(0);
+    ds << (int)ba.size();
+    tcpSocket->write(ba);
+}
+
+void chBoard::startCountDown()
+{
+    cs.countDown = countDown;
+    update();
+    dialog->updateUI();
+    timer->start();
+}
+
+void chBoard::end()
+{
+    timer->stop();
+    ready[0] = ready[1] = false;
+    sendMessage2(ready);
+    emit isEnd();
+}
+
+QPoint chBoard::getNrstCor(QPoint p)
+{
+    p -= QPoint(extent / 2, extent / 2);
+    for (int i = 0; i < 15; ++i)
+        for (int j = 0; j < 15; ++j)
+            if (qAbs(p.x() - getPos(i, j).x()) < cellsz * 0.5 && qAbs(p.y() - getPos(i, j).y()) < cellsz * 0.5)
+                return QPoint(i, j);
+    return QPoint(-1, -1);
+}
+
+void chBoard::drawPiece(QPainter *painter, const QPoint &p, bool col)
+{
+    painter->setPen(Qt::NoPen);
+    if (col) painter->setBrush(Qt::black);
+    else painter->setBrush(Qt::white);
+    painter->drawEllipse(getPos(p), cellsz * 0.4, cellsz * 0.4);
+}
 
 void chBoard::paintEvent(QPaintEvent *event)
 {
+    qDebug() << "paintEvent";
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setPen(Qt::black);
@@ -33,8 +259,8 @@ void chBoard::paintEvent(QPaintEvent *event)
 
     for (int i = 0; i < 15; ++i)
         for (int j = 0; j < 15; ++j)
-            if (cs.chess[i][j] != -1)
-                drawPiece(&p, i, j, (bool)cs.chess[i][j]);
+            if (cs.chessBoard[i][j] != -1)
+                drawPiece(&p, i, j, (bool)cs.chessBoard[i][j]);
 }
 
 inline QPoint chBoard::getPos(int x, int y)
@@ -49,41 +275,31 @@ inline QPoint chBoard::getPos(const QPoint &p)
 
 void chBoard::drawPiece(QPainter *painter, int x, int y, bool col)
 {
-    drawPiece(painter, QPoint(x, y), col);
+        drawPiece(painter, QPoint(x, y), col);
 }
 
-void chBoard::mousePressEvent(QMouseEvent *event)
+void chBoard::timeout1()
 {
-    if (lock) return;
-    QPoint tmp = getNrstCor(event->pos());
-    if (tmp.x() != -1)
-        if (cs.step(tmp)) {
-            update();
-            lock = true;
-        }
+//    qDebug() <<cs.curRound;
+//    if (cs.getState() ==)
+        --cs.countDown;
+         cs.timeUsage[cs.curSide] = cs.timeUsage[cs.curSide].addSecs(1);
+//         qDebug() << cs.timeUsage[cs.curSide].toString("hh:mm:ss");
+         if (cs.countDown < 0) {
+             if (cs.curSide != isHost) {received = false; QTimer::singleShot(100, this, SLOT(timeout2()));}
+             else step(cs.defaultMove());
+         }
+         dialog->updateUI();
 }
 
-void chBoard::init(bool _isHost, Dialog *_dialog)
+void chBoard::timeout2()
 {
-    isHost = _isHost;
-    dialog = _dialog;
-}
-
-QPoint chBoard::getNrstCor(QPoint p)
-{
-    p -= QPoint(extent / 2, extent / 2);
-    for (int i = 0; i < 15; ++i)
-        for (int j = 0; j < 15; ++j)
-            if (qAbs(p.x() - getPos(i, j).x()) < cellsz * 0.5 && qAbs(p.y() - getPos(i, j).y()) < cellsz * 0.5)
-                return QPoint(i, j);
-    return QPoint(-1, -1);
-}
-
-void chBoard::drawPiece(QPainter *painter, const QPoint &p, bool col)
-{
-    painter->setPen(Qt::NoPen);
-    if (col) painter->setBrush(Qt::black);
-    else painter->setBrush(Qt::white);
-    painter->drawEllipse(getPos(p), cellsz * 0.4, cellsz * 0.4);
-    update();
+    qDebug() << received;
+    if (received) return;
+    if (!isHost) {
+        timer->stop();
+        QMessageBox::information(this, "Lost connection", "Lost connection.");
+        return;
+    }
+    step(cs.defaultMove());
 }

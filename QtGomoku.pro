@@ -15,10 +15,12 @@ TEMPLATE = app
 SOURCES += main.cpp\
         dialog.cpp \
     chboard.cpp \
-    chess.cpp
+    chess.cpp \
+    ipdialog.cpp
 
 HEADERS  += dialog.h \
     chboard.h \
-    chess.h
+    chess.h \
+    ipdialog.h
 
 FORMS    += dialog.ui
