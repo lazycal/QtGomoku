@@ -13,7 +13,7 @@ Dialog::Dialog(QWidget *parent) :
 //    ui->label_2->setStyleSheet("font-size: 15px;");
     connect(ui->widget, &chBoard::ReadyEnabled, [=](){
         qDebug() << "ReadyEnabled";
-        ui->pushButton_3->setEnabled(true);
+//        ui->pushButton_3->setEnabled(true);
     });
     connect(ui->widget, &chBoard::setButtonConnect, this, &Dialog::setButtonConnect);
     connect(ui->widget, &chBoard::updateUI, this, &Dialog::updateUI);
@@ -29,11 +29,9 @@ void Dialog::setButtonConnect(bool connected)
     if (connected) {
         ui->pushButton->setText("Disconnect");
         ui->pushButton_2->setEnabled(false);
-        ui->pushButton_3->setEnabled(true);
     }else {
         ui->pushButton->setText("Create");
         ui->pushButton_2->setEnabled(true);
-        ui->pushButton_3->setEnabled(false);
     }
 }
 
@@ -88,7 +86,7 @@ void Dialog::on_pushButton_2_clicked()
 void Dialog::on_pushButton_3_clicked()
 {
 //    cs.init(qrand() % 2);
-    ui->pushButton_3->setDisabled(true);
+//    ui->pushButton_3->setDisabled(true);
     ui->widget->toggleReady(true);
 //    ui->widget->start();
 }

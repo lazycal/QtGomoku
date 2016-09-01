@@ -1,7 +1,8 @@
 #include "chess.h"
 #include<cstring>
 #include<QDebug>
-const int dir[4][2] = {{1,0},{1,1},{0,1},{1,-1}};
+#include<QString>
+const int dir[8][2] = {{1,0},{1,1},{0,1},{1,-1}, {-1, 0}, {-1, -1}, {0, -1}, {-1, 1}};
 
 Chess::Chess()
 {
@@ -34,14 +35,20 @@ void Chess::setTipOn(int side)
                 chessBoard[i][j] = side;
                 int cnt = 0;
                 for (int x = 0; x < 15 && cnt < 2; ++x)
-                    for (int y = 0; y < 15 && cnt < 2; ++y)
-                        if (chessBoard[x][y] == -1)
+                    for (int y = 0; y < 15 && cnt < 2; ++y) {
+                        if (chessBoard[x][y] < 0)
                             for (int k = 0; k < 4; ++k)
-                                if (exist(x + dir[k][0], y + dir[k][1], k, 3, side)) {
-                                    qDebug() << x << y;
-                                    if (piece(x, y, k, 4) < 0) ++cnt;
-                                    else if (piece(x, y, k, 4) == side) ++cnt;
+                                if (exist(x + dir[k][0], y + dir[k][1], k, 3, side) && piece(x, y, k, 4) < 0) {
+                                    ++cnt; // 3
+                                    qDebug() << QString("find 3 on (%1,%2) of (%3,%4)").arg(QString::number(x), QString::number(y), QString::number(i), QString::number(j));
                                 }
+                        if (chessBoard[x][y] == side)
+                            for (int k = 0; k < 4; ++k)
+                                if (exist(x, y, k, 4, side) && (piece(x, y, k, 4) < 0 || piece(x, y, k, -1) < 0)) {
+                                    ++cnt; // 4
+                                    qDebug() << QString("find 4 on (%1,%2) of (%3,%4)").arg(QString::number(x), QString::number(y), QString::number(i), QString::number(j));
+                                }
+                    }
                 if (cnt >= 2) chessBoard[i][j] = -2;
                 else chessBoard[i][j] = -1;
             }
@@ -80,11 +87,14 @@ bool Chess::exist(int i, int j, int k, int num, int side)
 
 int Chess::piece(int i, int j, int k, int num)
 {
+    int sgn = 1;
+    if (num < 0) num = -num, sgn = -1;
     while (num--) {
         if (i < 0 || i >= 15 || j < 0 || j >= 15) return 100;
-        i += dir[k][0];
-        j += dir[k][1];
+        i += dir[k][0] * sgn;
+        j += dir[k][1] * sgn;
     }
+    if (i < 0 || i >= 15 || j < 0 || j >= 15) return 100;
     return chessBoard[i][j];
 }
 
