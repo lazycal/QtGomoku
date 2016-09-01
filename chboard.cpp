@@ -192,6 +192,7 @@ void chBoard::readData()
     m_buffer.append(buffer);
     QDataStream in(m_buffer);
     in.setByteOrder(QDataStream::BigEndian);
+    in.setVersion(QDataStream::Qt_4_3);
     while (m_buffer.size() >= sizeof(int)) {
         int bsz, type_id; Chess tmp; bool side;
         in >> bsz;
@@ -283,6 +284,7 @@ void chBoard::sendMessage()
     QByteArray ba;
     QDataStream ds(&ba, QIODevice::WriteOnly);
     ds.setByteOrder(QDataStream::BigEndian);
+    ds.setVersion(QDataStream::Qt_4_3);
     ds << int(0) << int(0);
     ds << isHost << cs;
     ds.device()->seek(0);
@@ -295,6 +297,7 @@ void chBoard::sendMessage2(bool r[2])
     QByteArray ba;
     QDataStream ds(&ba, QIODevice::WriteOnly);
     ds.setByteOrder(QDataStream::BigEndian);
+    ds.setVersion(QDataStream::Qt_4_3);
     ds << int(0) << int(1);
     ds << r[0] << r[1];
     ds.device()->seek(0);
