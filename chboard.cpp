@@ -78,9 +78,11 @@ void chBoard::setServer(const QString &ip, const QString &port)
     connect(tcpServer, &QTcpServer::newConnection, [=](){
         qDebug() << "newConnection.";
         tcpSocket = tcpServer->nextPendingConnection();
-        QMessageBox::information(this, "newConnection", QString("hostname=%3\nip=%1\nport=%2")
-                                 .arg(tcpSocket->peerAddress().toString(),QString(tcpSocket->peerPort()),tcpSocket->peerName()));
         msgBox->accept();
+        QMessageBox *ipBox = new QMessageBox(this);
+        ipBox->setText("newConnection:"+QString("ip=%1").arg(tcpSocket->peerAddress().toString()));
+        ipBox->setStandardButtons(QMessageBox::Ok);
+        ipBox->show();
         initSocket();
         emit setButtonConnect(true);
         if (cs.getState() != -2) sendMessage();
