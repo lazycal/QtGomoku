@@ -54,6 +54,7 @@ void Dialog::updateUI()
         ui->lcdTotal_2->display(cs.timeUsage[cs.curSide].toString("mm:ss"));
         ui->lcdTotal->display(cs.timeUsage[cs.curSide^1].toString("mm:ss"));
     }
+    ui->pushButton_4->setEnabled(cs.getState() == -1);
 //    ui->pushButton_3->setEnabled(!ui->widget->ready[ui->widget->isHost]);
 }
 
@@ -90,4 +91,9 @@ void Dialog::on_pushButton_3_clicked()
     ui->pushButton_3->setDisabled(true);
     ui->widget->toggleReady(true);
 //    ui->widget->start();
+}
+
+void Dialog::on_pushButton_4_clicked()
+{
+    ui->widget->setTipOn();
 }

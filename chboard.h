@@ -23,8 +23,8 @@ public:
     void paintEvent(QPaintEvent *event);
     QPoint getPos(int x, int y);
     QPoint getPos(const QPoint &p);
-    void drawPiece(QPainter *painter, const QPoint &p, bool col);
-    void drawPiece(QPainter *painter, int x, int y, bool col);
+    void drawPiece(QPainter *painter, const QPoint &p, int col);
+    void drawPiece(QPainter *painter, int x, int y, int col);
     QPoint getNrstCor(QPoint p);
     void mousePressEvent(QMouseEvent *event);
     void init(bool _isHost, Dialog *_dialog);
@@ -49,6 +49,7 @@ protected:
     void initSocket();
     void result();
     void disconnectServer();
+    void setTipOn();
 signals:
     void setButtonConnect(bool);
     void updateUI();

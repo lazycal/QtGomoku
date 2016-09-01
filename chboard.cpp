@@ -15,11 +15,22 @@ QPoint chBoard::getNrstCor(QPoint p)
     return QPoint(-1, -1);
 }
 
-void chBoard::drawPiece(QPainter *painter, const QPoint &p, bool col)
+void chBoard::drawPiece(QPainter *painter, const QPoint &p, int col)
 {
     painter->setPen(Qt::NoPen);
-    if (col) painter->setBrush(Qt::black);
-    else painter->setBrush(Qt::white);
+    switch (col) {
+    case 1:
+        painter->setBrush(Qt::black);
+        break;
+    case 0:
+        painter->setBrush(Qt::white);
+        break;
+    case -2:
+        painter->setBrush(Qt::red);
+        break;
+    default:
+        break;
+    }
     painter->drawEllipse(getPos(p), cellsz * 0.4, cellsz * 0.4);
 }
 
@@ -46,7 +57,7 @@ void chBoard::paintEvent(QPaintEvent *event)
     for (int i = 0; i < 15; ++i)
         for (int j = 0; j < 15; ++j)
             if (cs.chessBoard[i][j] != -1)
-                drawPiece(&p, i, j, (bool)cs.chessBoard[i][j]);
+                drawPiece(&p, i, j, cs.chessBoard[i][j]);
 }
 
 inline QPoint chBoard::getPos(int x, int y)
@@ -59,7 +70,7 @@ inline QPoint chBoard::getPos(const QPoint &p)
     return QPoint(cellsz*p.x(), cellsz*p.y());
 }
 
-void chBoard::drawPiece(QPainter *painter, int x, int y, bool col)
+void chBoard::drawPiece(QPainter *painter, int x, int y, int col)
 {
         drawPiece(painter, QPoint(x, y), col);
 }
@@ -163,6 +174,13 @@ void chBoard::disconnectServer()
     tcpSocket->abort();
     end();
     cs.init(qrand()%2);
+}
+
+void chBoard::setTipOn()
+{
+    cs.setTipOn(isHost);
+    update();
+    qDebug() << cs.chessBoard;
 }
 
 void chBoard::readData()

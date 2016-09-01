@@ -25,14 +25,37 @@ void Chess::start()
     state = -1;
 }
 
+void Chess::setTipOn(int side)
+{
+    side ^= 1;
+    for (int i = 0; i < 15; ++i)
+        for (int j = 0; j < 15; ++j)
+            if (chessBoard[i][j] == -1) {
+                chessBoard[i][j] = side;
+                int cnt = 0;
+                for (int x = 0; x < 15 && cnt < 2; ++x)
+                    for (int y = 0; y < 15 && cnt < 2; ++y)
+                        if (chessBoard[x][y] == -1)
+                            for (int k = 0; k < 4; ++k)
+                                if (exist(x + dir[k][0], y + dir[k][1], k, 3, side)) {
+                                    qDebug() << x << y;
+                                    if (piece(x, y, k, 4) < 0) ++cnt;
+                                    else if (piece(x, y, k, 4) == side) ++cnt;
+                                }
+                if (cnt >= 2) chessBoard[i][j] = -2;
+                else chessBoard[i][j] = -1;
+            }
+}
+
 bool Chess::step(const QPoint &p)
 {
-    if (chessBoard[p.x()][p.y()] == -1) {
+    if (chessBoard[p.x()][p.y()] < 0) {
         chessBoard[p.x()][p.y()] = curSide;
         bool find = false, empty = false;
         for (int i = 0; i < 15 && !find; ++i)
             for (int j = 0; j < 15 && !find; ++j) {
-                empty |= (chessBoard[i][j] == -1);
+                if (chessBoard[i][j] == -2) chessBoard[i][j] = -1;
+                empty |= (chessBoard[i][j] < 0);
                 for (int k = 0; k < 4; ++k)
                     find |= exist(i, j, k, 5, curSide);
             }
@@ -55,6 +78,16 @@ bool Chess::exist(int i, int j, int k, int num, int side)
     return true;
 }
 
+int Chess::piece(int i, int j, int k, int num)
+{
+    while (num--) {
+        if (i < 0 || i >= 15 || j < 0 || j >= 15) return 100;
+        i += dir[k][0];
+        j += dir[k][1];
+    }
+    return chessBoard[i][j];
+}
+
 int Chess::getState() const
 {
     return state;
@@ -64,7 +97,7 @@ QPoint Chess::defaultMove()
 {
     for (int i = 0; i < 15; ++i)
         for (int j = 0; j < 15; ++j)
-            if (chessBoard[i][j] == -1)
+            if (chessBoard[i][j] < 0)
                 return QPoint(i,j );
 }
 
